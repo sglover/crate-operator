@@ -65,6 +65,7 @@ from kubernetes_asyncio.client import (
     V1SecretKeySelector,
     V1SecretVolumeSource,
     V1SecurityContext,
+    V1Capabilities,
     V1Service,
     V1ServicePort,
     V1ServiceSpec,
@@ -331,6 +332,13 @@ def get_statefulset_containers(
                 http_get=V1HTTPGetAction(path="/ready", port=prometheus_port),
                 initial_delay_seconds=10 if config.TESTING else 30,
                 period_seconds=5 if config.TESTING else 10,
+            ),
+            security_context=V1SecurityContext(
+                capabilities=V1Capabilities(
+                    add=["SYS_CHROOT"]
+                ),
+                run_as_group=0,
+                run_as_user=0
             ),
             resources=V1ResourceRequirements(
                 limits={
@@ -954,7 +962,7 @@ def get_data_service(
                 ),
             ],
             selector={LABEL_COMPONENT: "cratedb", LABEL_NAME: name},
-            type="LoadBalancer",
+            type="NodePort",
             external_traffic_policy="Local",
             load_balancer_source_ranges=source_ranges if source_ranges else None,
         ),
@@ -1059,14 +1067,6 @@ async def recreate_services(
     cratedb_labels.update(meta.get("labels", {}))
 
     owner_references = [
-        V1OwnerReference(
-            api_version=f"{API_GROUP}/v1",
-            block_owner_deletion=True,
-            controller=True,
-            kind="CrateDB",
-            name=name,
-            uid=meta["uid"],
-        )
     ]
     source_ranges = spec["cluster"].get("allowedCIDRs", None)
 
@@ -1174,14 +1174,6 @@ def get_cluster_resource_limits(
 
 def get_owner_references(name: str, meta: kopf.Meta) -> List[V1OwnerReference]:
     return [
-        V1OwnerReference(
-            api_version=f"{API_GROUP}/v1",
-            block_owner_deletion=True,
-            controller=True,
-            kind="CrateDB",
-            name=name,
-            uid=meta["uid"],
-        )
     ]
 
 

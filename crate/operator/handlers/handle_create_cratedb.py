@@ -68,14 +68,6 @@ async def create_cratedb(
     cratedb_labels.update(meta.get("labels", {}))
 
     owner_references = [
-        V1OwnerReference(
-            api_version=f"{API_GROUP}/v1",
-            block_owner_deletion=True,
-            controller=True,
-            kind="CrateDB",
-            name=name,
-            uid=meta["uid"],
-        )
     ]
 
     image_pull_secrets = get_image_pull_secrets()
